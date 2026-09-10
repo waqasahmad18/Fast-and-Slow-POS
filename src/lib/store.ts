@@ -82,7 +82,17 @@ async function persistFile(data: StoreData) {
 
 async function resolveBackend() {
   if (backend) return backend;
-  backend = (await tryGetDb()) ? "mongo" : "file";
+  const db = await tryGetDb();
+  if (process.env.VERCEL) {
+    if (!db) {
+      throw new Error(
+        "Set MONGODB_URI in Vercel to your MongoDB Atlas mongodb+srv:// connection string, then Redeploy."
+      );
+    }
+    backend = "mongo";
+    return backend;
+  }
+  backend = db ? "mongo" : "file";
   return backend;
 }
 
@@ -164,6 +174,11 @@ async function bootstrap() {
 
   const db = await tryGetDb();
   if (!db) {
+    if (process.env.VERCEL) {
+      throw new Error(
+        "Set MONGODB_URI in Vercel to your MongoDB Atlas mongodb+srv:// connection string, then Redeploy."
+      );
+    }
     backend = "file";
     const existing = await loadLegacyJson();
     if (!existing) await persistFile(seed());
@@ -217,6 +232,9 @@ async function readStore(): Promise<StoreData> {
   if ((await resolveBackend()) === "mongo") {
     const fromMongo = await readMongo();
     if (fromMongo) return fromMongo;
+    if (process.env.VERCEL) {
+      throw new Error("Could not read POS data from MongoDB Atlas.");
+    }
     backend = "file";
   }
   return (await loadLegacyJson()) ?? seed();

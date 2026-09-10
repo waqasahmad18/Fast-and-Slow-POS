@@ -22,7 +22,10 @@ export function shouldConnectMongo() {
 
 function connect(uri: string) {
   if (!globalForMongo.mongoClientPromise) {
-    const client = new MongoClient(uri, { serverSelectionTimeoutMS: 4000 });
+    const client = new MongoClient(uri, {
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+    });
     globalForMongo.mongoClientPromise = client.connect();
   }
   return globalForMongo.mongoClientPromise;
@@ -42,7 +45,11 @@ export async function tryGetDb(): Promise<Db | null> {
 export async function getDb(): Promise<Db> {
   const db = await tryGetDb();
   if (!db) {
-    throw new Error("MongoDB is not running. Start it with npm run db:start, then restart the app.");
+    throw new Error(
+      process.env.VERCEL
+        ? "Set MONGODB_URI in Vercel to your MongoDB Atlas mongodb+srv:// connection string, then Redeploy."
+        : "MongoDB is not running. Start it with npm run db:start, then restart the app."
+    );
   }
   return db;
 }
