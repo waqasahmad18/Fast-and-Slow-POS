@@ -59,7 +59,11 @@ textarea {
   min-height: 44px;
 }
 
-.dish-card {
+button.dish-card {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
   box-shadow: 0 10px 28px rgba(28, 20, 16, 0.08);
 }
 
