@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f6efe6;
+  --panel: #fffaf3;
+  --panel-2: #f3e8d8;
+  --line: #e6d3bb;
+  --gold: #e85d04;
+  --gold-2: #c2410c;
+  --mint: #2f6b4f;
+  --rose: #c23b3b;
+  --ink: #1c1410;
+  --muted: #7a6858;
+  --espresso: #1c1410;
+  --cream: #f6efe6;
+}
+
+@theme inline {
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-serif), ui-serif, Georgia, serif;
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-gold: var(--gold);
+  --color-gold-2: var(--gold-2);
+  --color-mint: var(--mint);
+  --color-rose: var(--rose);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-espresso: var(--espresso);
+  --color-cream: var(--cream);
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  background-image:
+    radial-gradient(circle at top right, rgba(232, 93, 4, 0.12), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(47, 107, 79, 0.08), transparent 24%);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c4a888 transparent;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  min-height: 44px;
+}
+
+.dish-card {
+  box-shadow: 0 10px 28px rgba(28, 20, 16, 0.08);
+}
+
+.dish-card:hover {
+  box-shadow: 0 16px 36px rgba(232, 93, 4, 0.16);
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 8mm 6mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  body {
+    background-image: none !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
