@@ -3,13 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "db:start": "powershell -ExecutionPolicy Bypass -File ./scripts/start-mongodb.ps1",
+    "db:migrate": "node ./scripts/migrate-to-mongo.mjs",
+    "predev": "npm run db:start",
     "dev": "next dev --turbopack -p 3001",
+    "prestart": "npm run db:start",
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "next lint"
   },
   "dependencies": {
     "lucide-react": "^0.536.0",
+    "mongodb": "^7.6.0",
     "next": "15.5.18",
     "react": "19.1.7",
     "react-dom": "19.1.7"

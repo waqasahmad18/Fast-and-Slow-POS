@@ -1,12 +1,11 @@
 import { promises as fs } from "fs";
 import path from "path";
+import type { AnyBulkWriteOperation, Document, Filter } from "mongodb";
 import { DEFAULT_DISH_IMAGES, dishImage } from "./dishes";
+import { getDb } from "./mongo";
 import type { MenuItem, Order, StockMove, StoreData, Table } from "./types";
 
-const DATA_DIR = process.env.VERCEL
-  ? path.join("/tmp", "restaurant-pos")
-  : path.join(process.cwd(), "data");
-const DATA_FILE = path.join(DATA_DIR, "store.json");
+const LEGACY_FILE = path.join(process.cwd(), "data", "store.json");
 
 function seed(): StoreData {
   const menu: MenuItem[] = [
@@ -42,47 +41,131 @@ function seed(): StoreData {
 }
 
 let writeQueue: Promise<void> = Promise.resolve();
+let ready: Promise<void> | null = null;
 
-function migrate(data: StoreData): { data: StoreData; dirty: boolean } {
-  let dirty = false;
-  if (!data.address) {
-    data.address = "Main Boulevard, Lahore";
-    dirty = true;
-  }
-  if (!data.phone) {
-    data.phone = "0300-1234567";
-    dirty = true;
-  }
+function migrate(data: StoreData): StoreData {
+  if (!data.address) data.address = "Main Boulevard, Lahore";
+  if (!data.phone) data.phone = "0300-1234567";
   if (!data.restaurantName || data.restaurantName === "Al Noor Restaurant") {
     data.restaurantName = "Fast and Slow Restaurant";
-    dirty = true;
   }
   for (const item of data.menu) {
-    if (!item.image?.trim()) {
-      item.image = dishImage(item);
-      dirty = true;
-    }
+    if (!item.image?.trim()) item.image = dishImage(item);
   }
-  return { data, dirty };
+  return data;
+}
+
+function withoutMongoId<T extends { id: string }>(doc: T & { _id?: unknown }): T {
+  const { _id: _unused, ...rest } = doc;
+  void _unused;
+  return rest as T;
+}
+
+async function loadLegacyJson(): Promise<StoreData | null> {
+  try {
+    const raw = await fs.readFile(LEGACY_FILE, "utf8");
+    return migrate(JSON.parse(raw) as StoreData);
+  } catch {
+    return null;
+  }
+}
+
+const byId = (id: string) => ({ _id: id }) as unknown as Filter<Document>;
+
+async function syncCollection<T extends { id: string }>(
+  name: "menu" | "tables" | "orders" | "stockMoves",
+  items: T[]
+) {
+  const db = await getDb();
+  const col = db.collection(name);
+  const ids = items.map((item) => item.id);
+  if (ids.length) {
+    await col.deleteMany({ _id: { $nin: ids } } as unknown as Filter<Document>);
+    await col.bulkWrite(
+      items.map((item) => ({
+        replaceOne: {
+          filter: byId(item.id),
+          replacement: { ...item },
+          upsert: true,
+        },
+      })) as AnyBulkWriteOperation<Document>[]
+    );
+    return;
+  }
+  await col.deleteMany({});
+}
+
+async function persist(data: StoreData) {
+  const db = await getDb();
+  await db.collection("settings").updateOne(
+    byId("main"),
+    {
+      $set: {
+        restaurantName: data.restaurantName,
+        address: data.address,
+        phone: data.phone,
+        taxRate: data.taxRate,
+      },
+    },
+    { upsert: true }
+  );
+  await syncCollection("menu", data.menu);
+  await syncCollection("tables", data.tables);
+  await syncCollection("orders", data.orders);
+  await syncCollection("stockMoves", data.stockMoves);
+}
+
+async function ensureIndexes() {
+  const db = await getDb();
+  await Promise.all([
+    db.collection("orders").createIndex({ createdAt: -1 }),
+    db.collection("orders").createIndex({ status: 1 }),
+    db.collection("stockMoves").createIndex({ createdAt: -1 }),
+  ]);
+}
+
+async function bootstrap() {
+  const db = await getDb();
+  const settings = await db.collection("settings").findOne(byId("main"));
+  if (!settings) {
+    const data = (await loadLegacyJson()) ?? seed();
+    await persist(data);
+  }
+  await ensureIndexes();
+}
+
+function ensureReady() {
+  if (!ready) ready = bootstrap();
+  return ready;
 }
 
 async function readStore(): Promise<StoreData> {
-  try {
-    const raw = await fs.readFile(DATA_FILE, "utf8");
-    const { data, dirty } = migrate(JSON.parse(raw) as StoreData);
-    if (dirty) await writeStore(data);
-    return data;
-  } catch {
+  await ensureReady();
+  const db = await getDb();
+  const [settings, menu, tables, orders, stockMoves] = await Promise.all([
+    db.collection("settings").findOne(byId("main")),
+    db.collection("menu").find().toArray(),
+    db.collection("tables").find().toArray(),
+    db.collection("orders").find().sort({ createdAt: -1 }).toArray(),
+    db.collection("stockMoves").find().sort({ createdAt: -1 }).toArray(),
+  ]);
+
+  if (!settings) {
     const data = seed();
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+    await persist(data);
     return data;
   }
-}
 
-async function writeStore(data: StoreData) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+  return migrate({
+    restaurantName: String(settings.restaurantName ?? "Fast and Slow Restaurant"),
+    address: String(settings.address ?? ""),
+    phone: String(settings.phone ?? ""),
+    taxRate: Number(settings.taxRate ?? 0.05),
+    menu: menu.map((item) => withoutMongoId(item as MenuItem & { _id?: unknown })),
+    tables: tables.map((item) => withoutMongoId(item as Table & { _id?: unknown })),
+    orders: orders.map((item) => withoutMongoId(item as Order & { _id?: unknown })),
+    stockMoves: stockMoves.map((item) => withoutMongoId(item as StockMove & { _id?: unknown })),
+  });
 }
 
 export function withStore<T>(fn: (data: StoreData) => T | Promise<T>): Promise<T> {
@@ -104,7 +187,7 @@ export async function getStore() {
 export async function saveStore(mutator: (data: StoreData) => void) {
   return withStore(async (data) => {
     mutator(data);
-    await writeStore(data);
+    await persist(data);
     return structuredClone(data);
   });
 }
