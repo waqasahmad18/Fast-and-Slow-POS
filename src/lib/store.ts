@@ -3,7 +3,9 @@ import path from "path";
 import { DEFAULT_DISH_IMAGES, dishImage } from "./dishes";
 import type { MenuItem, Order, StockMove, StoreData, Table } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = process.env.VERCEL
+  ? path.join("/tmp", "restaurant-pos")
+  : path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "store.json");
 
 function seed(): StoreData {
