@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "db:start": "powershell -ExecutionPolicy Bypass -File ./scripts/start-mongodb.ps1",
+    "db:start": "node ./scripts/start-mongodb.js",
     "db:migrate": "node ./scripts/migrate-to-mongo.mjs",
     "predev": "npm run db:start",
     "dev": "next dev --turbopack -p 3001",

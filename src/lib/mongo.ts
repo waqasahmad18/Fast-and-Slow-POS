@@ -1,13 +1,26 @@
 import { MongoClient, type Db } from "mongodb";
 
-const uri = process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017";
 const dbName = process.env.MONGODB_DB ?? "fast_and_slow_pos";
 
 const globalForMongo = globalThis as unknown as {
   mongoClientPromise?: Promise<MongoClient>;
 };
 
-function connect() {
+export function getMongoUri() {
+  const fromEnv = process.env.MONGODB_URI?.trim() ?? "";
+  if (fromEnv) return fromEnv;
+  if (process.env.VERCEL) return "";
+  return "mongodb://127.0.0.1:27017";
+}
+
+export function shouldConnectMongo() {
+  const uri = getMongoUri();
+  if (!uri) return false;
+  if (process.env.VERCEL && /localhost|127\.0\.0\.1/.test(uri)) return false;
+  return true;
+}
+
+function connect(uri: string) {
   if (!globalForMongo.mongoClientPromise) {
     const client = new MongoClient(uri, { serverSelectionTimeoutMS: 4000 });
     globalForMongo.mongoClientPromise = client.connect();
@@ -15,12 +28,21 @@ function connect() {
   return globalForMongo.mongoClientPromise;
 }
 
-export async function getDb(): Promise<Db> {
+export async function tryGetDb(): Promise<Db | null> {
+  if (!shouldConnectMongo()) return null;
   try {
-    const client = await connect();
+    const client = await connect(getMongoUri());
     return client.db(dbName);
   } catch {
     globalForMongo.mongoClientPromise = undefined;
+    return null;
+  }
+}
+
+export async function getDb(): Promise<Db> {
+  const db = await tryGetDb();
+  if (!db) {
     throw new Error("MongoDB is not running. Start it with npm run db:start, then restart the app.");
   }
+  return db;
 }

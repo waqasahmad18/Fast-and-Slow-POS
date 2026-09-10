@@ -2,10 +2,15 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { AnyBulkWriteOperation, Document, Filter } from "mongodb";
 import { DEFAULT_DISH_IMAGES, dishImage } from "./dishes";
-import { getDb } from "./mongo";
+import { tryGetDb } from "./mongo";
 import type { MenuItem, Order, StockMove, StoreData, Table } from "./types";
 
-const LEGACY_FILE = path.join(process.cwd(), "data", "store.json");
+const DATA_DIR = process.env.VERCEL
+  ? path.join("/tmp", "restaurant-pos")
+  : path.join(process.cwd(), "data");
+const DATA_FILE = path.join(DATA_DIR, "store.json");
+
+let backend: "mongo" | "file" | null = null;
 
 function seed(): StoreData {
   const menu: MenuItem[] = [
@@ -63,11 +68,22 @@ function withoutMongoId<T extends { id: string }>(doc: T & { _id?: unknown }): T
 
 async function loadLegacyJson(): Promise<StoreData | null> {
   try {
-    const raw = await fs.readFile(LEGACY_FILE, "utf8");
+    const raw = await fs.readFile(DATA_FILE, "utf8");
     return migrate(JSON.parse(raw) as StoreData);
   } catch {
     return null;
   }
+}
+
+async function persistFile(data: StoreData) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+async function resolveBackend() {
+  if (backend) return backend;
+  backend = (await tryGetDb()) ? "mongo" : "file";
+  return backend;
 }
 
 const byId = (id: string) => ({ _id: id }) as unknown as Filter<Document>;
@@ -76,7 +92,8 @@ async function syncCollection<T extends { id: string }>(
   name: "menu" | "tables" | "orders" | "stockMoves",
   items: T[]
 ) {
-  const db = await getDb();
+  const db = await tryGetDb();
+  if (!db) throw new Error("MongoDB unavailable.");
   const col = db.collection(name);
   const ids = items.map((item) => item.id);
   if (ids.length) {
@@ -96,7 +113,20 @@ async function syncCollection<T extends { id: string }>(
 }
 
 async function persist(data: StoreData) {
-  const db = await getDb();
+  if ((await resolveBackend()) === "file") {
+    await persistFile(data);
+    return;
+  }
+  await persistMongo(data);
+}
+
+async function persistMongo(data: StoreData) {
+  const db = await tryGetDb();
+  if (!db) {
+    backend = "file";
+    await persistFile(data);
+    return;
+  }
   await db.collection("settings").updateOne(
     byId("main"),
     {
@@ -116,7 +146,8 @@ async function persist(data: StoreData) {
 }
 
 async function ensureIndexes() {
-  const db = await getDb();
+  const db = await tryGetDb();
+  if (!db) return;
   await Promise.all([
     db.collection("orders").createIndex({ createdAt: -1 }),
     db.collection("orders").createIndex({ status: 1 }),
@@ -125,11 +156,23 @@ async function ensureIndexes() {
 }
 
 async function bootstrap() {
-  const db = await getDb();
+  if ((await resolveBackend()) === "file") {
+    const existing = await loadLegacyJson();
+    if (!existing) await persistFile(seed());
+    return;
+  }
+
+  const db = await tryGetDb();
+  if (!db) {
+    backend = "file";
+    const existing = await loadLegacyJson();
+    if (!existing) await persistFile(seed());
+    return;
+  }
+
   const settings = await db.collection("settings").findOne(byId("main"));
   if (!settings) {
-    const data = (await loadLegacyJson()) ?? seed();
-    await persist(data);
+    await persistMongo((await loadLegacyJson()) ?? seed());
   }
   await ensureIndexes();
 }
@@ -139,9 +182,10 @@ function ensureReady() {
   return ready;
 }
 
-async function readStore(): Promise<StoreData> {
-  await ensureReady();
-  const db = await getDb();
+async function readMongo(): Promise<StoreData | null> {
+  const db = await tryGetDb();
+  if (!db) return null;
+
   const [settings, menu, tables, orders, stockMoves] = await Promise.all([
     db.collection("settings").findOne(byId("main")),
     db.collection("menu").find().toArray(),
@@ -166,6 +210,16 @@ async function readStore(): Promise<StoreData> {
     orders: orders.map((item) => withoutMongoId(item as Order & { _id?: unknown })),
     stockMoves: stockMoves.map((item) => withoutMongoId(item as StockMove & { _id?: unknown })),
   });
+}
+
+async function readStore(): Promise<StoreData> {
+  await ensureReady();
+  if ((await resolveBackend()) === "mongo") {
+    const fromMongo = await readMongo();
+    if (fromMongo) return fromMongo;
+    backend = "file";
+  }
+  return (await loadLegacyJson()) ?? seed();
 }
 
 export function withStore<T>(fn: (data: StoreData) => T | Promise<T>): Promise<T> {
