@@ -138,12 +138,12 @@ export function PosTerminal({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
-      <section className="rounded-[28px] border border-line bg-panel p-4 md:p-5">
+    <div className="grid gap-4 pb-24 xl:grid-cols-[1fr_minmax(300px,380px)] xl:pb-0">
+      <section className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-4 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-gold">Fast & Slow · POS</p>
-            <h2 className="font-display mt-1 text-3xl">Create bill</h2>
+            <h2 className="font-display mt-1 text-2xl sm:text-3xl">Create bill</h2>
           </div>
           {openOrders.length ? (
             <div className="flex flex-wrap gap-2">
@@ -179,13 +179,13 @@ export function PosTerminal({
               className="box-border h-12 w-full min-w-0 rounded-2xl border border-line bg-white py-0 pr-4 pl-11 text-sm outline-none ring-gold/40 focus:ring-2"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             {categories.map((name) => (
               <button
                 key={name}
                 type="button"
                 onClick={() => setCategory(name)}
-                className={`rounded-full px-4 text-sm ${
+                className={`shrink-0 rounded-full px-4 text-sm ${
                   category === name ? "bg-gold text-white" : "bg-panel-2 text-muted"
                 }`}
               >
@@ -195,7 +195,7 @@ export function PosTerminal({
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3">
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3">
           {visible.map((item) => {
             const out = item.stock < 1;
             return (
@@ -204,7 +204,7 @@ export function PosTerminal({
                 type="button"
                 disabled={out}
                 onClick={() => addItem(item)}
-                className="dish-card group overflow-hidden rounded-[24px] border border-line bg-white text-left transition hover:-translate-y-0.5 disabled:opacity-40"
+                className="dish-card group overflow-hidden rounded-2xl border border-line bg-white text-left transition sm:rounded-[24px] sm:hover:-translate-y-0.5 disabled:opacity-40"
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-panel-2">
                   <DishPhoto
@@ -219,8 +219,8 @@ export function PosTerminal({
                     {money(item.price)}
                   </span>
                 </div>
-                <div className="p-3">
-                  <p className="font-medium leading-snug">{item.name}</p>
+                <div className="p-2 sm:p-3">
+                  <p className="text-sm font-medium leading-snug sm:text-base">{item.name}</p>
                   <p className={`mt-1 text-xs ${item.stock <= item.lowStockAt ? "text-rose" : "text-muted"}`}>
                     {out ? "Out of stock" : `${item.stock} ${item.unit} left`}
                   </p>
@@ -231,9 +231,9 @@ export function PosTerminal({
         </div>
       </section>
 
-      <aside className="rounded-[28px] border border-line bg-panel p-4 md:p-5">
+      <aside id="current-bill" className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-4 md:p-5">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-2xl">Current bill</h3>
+          <h3 className="font-display text-xl sm:text-2xl">Current bill</h3>
           <button type="button" onClick={reset} className="rounded-full bg-panel-2 px-3 text-xs text-muted">
             New
           </button>
@@ -277,12 +277,12 @@ export function PosTerminal({
             detailed.map((line) => (
               <div key={line.itemId} className="rounded-2xl bg-panel-2 p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 overflow-hidden rounded-xl bg-white">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white">
                       <DishPhoto item={line} alt={line.name} className="h-full w-full object-cover" />
                     </div>
-                    <div>
-                      <p className="font-medium">{line.name}</p>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{line.name}</p>
                       <p className="text-xs text-muted">{money(line.price)}</p>
                     </div>
                   </div>
@@ -380,6 +380,18 @@ export function PosTerminal({
           </div>
         ) : null}
       </aside>
+
+      {cart.length > 0 ? (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-panel/95 p-3 backdrop-blur xl:hidden">
+          <button
+            type="button"
+            onClick={() => document.getElementById("current-bill")?.scrollIntoView({ behavior: "smooth" })}
+            className="w-full rounded-2xl bg-gold text-sm font-semibold text-white"
+          >
+            View bill · {detailed.reduce((n, line) => n + line.qty, 0)} items · {money(total)}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -65,10 +65,10 @@ export function MenuManager({ menu }: { menu: MenuItem[] }) {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
-      <form onSubmit={submit} className="rounded-[28px] border border-line bg-panel p-5">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,360px)_1fr]">
+      <form onSubmit={submit} className="rounded-2xl border border-line bg-panel p-4 sm:rounded-[28px] sm:p-5">
         <p className="text-xs uppercase tracking-[0.2em] text-gold">Fast & Slow menu</p>
-        <h2 className="font-display mt-1 text-3xl">{form.id ? "Edit item" : "Add item"}</h2>
+        <h2 className="font-display mt-1 text-2xl sm:text-3xl">{form.id ? "Edit item" : "Add item"}</h2>
         <div className="mt-4 space-y-3">
           <input
             value={form.name}
@@ -141,14 +141,14 @@ export function MenuManager({ menu }: { menu: MenuItem[] }) {
         </div>
       </form>
 
-      <section className="rounded-[28px] border border-line bg-panel p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-display text-2xl">{menu.length} dishes</h3>
+      <section className="rounded-2xl border border-line bg-panel p-4 sm:rounded-[28px] sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <h3 className="font-display text-xl sm:text-2xl">{menu.length} dishes</h3>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search"
-            className="rounded-2xl border border-line bg-bg px-3 text-sm outline-none"
+            className="w-full rounded-2xl border border-line bg-bg px-3 text-sm outline-none sm:w-56"
           />
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">

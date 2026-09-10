@@ -16,7 +16,7 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
           <Link href="/orders" className="text-sm text-gold-2 hover:underline">
             Back to bills
           </Link>
-          <h2 className="font-display mt-1 text-4xl">{data.order.billNo}</h2>
+          <h2 className="font-display mt-1 text-2xl sm:text-4xl">{data.order.billNo}</h2>
         </div>
         <BillActions orderId={data.order.id} status={data.order.status} />
       </div>

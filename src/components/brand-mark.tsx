@@ -27,7 +27,7 @@ export function BrandMark({
           Restaurant
         </p>
         {size === "md" ? (
-          <p className={`mt-1 text-[11px] ${light ? "text-muted" : "text-cream/60"}`}>
+          <p className={`mt-1 hidden text-[11px] sm:block ${light ? "text-muted" : "text-cream/60"}`}>
             Quick plates. Slow cooking.
           </p>
         ) : null}

@@ -15,7 +15,7 @@ export function BillActions({ orderId, status }: { orderId: string; status: Orde
         href={`/orders/${orderId}/print`}
         target="_blank"
         rel="noreferrer"
-        className="rounded-2xl bg-gold px-4 text-sm font-semibold text-white"
+        className="flex-1 rounded-2xl bg-gold px-4 text-center text-sm font-semibold text-white sm:flex-none"
       >
         Print bill
       </a>

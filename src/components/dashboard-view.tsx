@@ -31,32 +31,34 @@ export function DashboardView({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <BrandMark tone="light" />
-          <h2 className="font-display mt-4 text-4xl">{restaurantName}</h2>
-          <p className="mt-1 text-muted">Today’s floor, sales, and stock — quick plates, slow cooking.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <div className="hidden md:block">
+            <BrandMark tone="light" />
+          </div>
+          <h2 className="font-display text-2xl break-words sm:text-4xl md:mt-4">{restaurantName}</h2>
+          <p className="mt-1 text-sm text-muted sm:text-base">Today’s floor, sales, and stock — quick plates, slow cooking.</p>
         </div>
-        <Link href="/pos" className="rounded-2xl bg-gold px-5 py-3 text-sm font-semibold text-white">
+        <Link href="/pos" className="inline-flex w-full items-center justify-center rounded-2xl bg-gold px-5 py-3 text-sm font-semibold text-white sm:w-auto">
           New bill
         </Link>
       </div>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         {cards.map((card) => (
-          <article key={card.label} className="rounded-[28px] border border-line bg-panel p-5">
-            <p className="text-sm text-muted">{card.label}</p>
-            <p className="mt-2 font-display text-3xl">{card.value}</p>
-            <p className="mt-2 text-xs text-muted">{card.hint}</p>
+          <article key={card.label} className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">
+            <p className="text-xs text-muted sm:text-sm">{card.label}</p>
+            <p className="mt-2 font-display text-xl sm:text-3xl">{card.value}</p>
+            <p className="mt-2 text-[11px] text-muted sm:text-xs">{card.hint}</p>
           </article>
         ))}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <article className="rounded-[28px] border border-line bg-panel p-5">
-          <div className="flex items-center justify-between">
-            <h3 className="font-display text-2xl">Hourly sales</h3>
-            <div className="flex gap-3 text-sm text-muted">
+        <article className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="font-display text-xl sm:text-2xl">Hourly sales</h3>
+            <div className="flex flex-wrap gap-3 text-xs text-muted sm:text-sm">
               <span className="inline-flex items-center gap-1">
                 <Banknote size={14} className="text-mint" /> {money(stats.cash)} cash
               </span>
@@ -85,30 +87,30 @@ export function DashboardView({
           </div>
         </article>
 
-        <article className="rounded-[28px] border border-line bg-panel p-5">
-          <h3 className="font-display text-2xl">Top dishes</h3>
+        <article className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">
+          <h3 className="font-display text-xl sm:text-2xl">Top dishes</h3>
           <div className="mt-4 space-y-3">
             {stats.topItems.length === 0 ? (
               <p className="text-sm text-muted">No paid sales yet today.</p>
             ) : (
               stats.topItems.map((item, index) => (
                 <div key={item.name} className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={dishImage({ name: item.name })}
                       alt={item.name}
-                      className="h-12 w-12 rounded-xl object-cover"
+                      className="h-12 w-12 shrink-0 rounded-xl object-cover"
                     />
-                    <div>
-                      <p className="text-sm">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm">
                         <span className="mr-2 text-gold">{index + 1}.</span>
                         {item.name}
                       </p>
                       <p className="text-xs text-muted">{item.qty} sold</p>
                     </div>
                   </div>
-                  <p className="text-sm text-gold-2">{money(item.sales)}</p>
+                  <p className="shrink-0 text-sm text-gold-2">{money(item.sales)}</p>
                 </div>
               ))
             )}
@@ -117,9 +119,9 @@ export function DashboardView({
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <article className="rounded-[28px] border border-line bg-panel p-5">
+        <article className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-2xl">Open bills</h3>
+            <h3 className="font-display text-xl sm:text-2xl">Open bills</h3>
             <Users size={18} className="text-gold" />
           </div>
           <div className="mt-4 space-y-2">
@@ -145,9 +147,9 @@ export function DashboardView({
           </div>
         </article>
 
-        <article className="rounded-[28px] border border-line bg-panel p-5">
+        <article className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-2xl">Low stock</h3>
+            <h3 className="font-display text-xl sm:text-2xl">Low stock</h3>
             <AlertTriangle size={18} className="text-rose" />
           </div>
           <div className="mt-4 space-y-2">
@@ -178,12 +180,34 @@ export function DashboardView({
         </article>
       </section>
 
-      <article className="rounded-[28px] border border-line bg-panel p-5">
+      <article className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-2xl">Recent bills</h3>
+          <h3 className="font-display text-xl sm:text-2xl">Recent bills</h3>
           <ReceiptText size={18} className="text-gold" />
         </div>
-        <div className="mt-4 overflow-x-auto">
+        <div className="mt-4 space-y-2 md:hidden">
+          {recent.length === 0 ? (
+            <p className="py-4 text-sm text-muted">No bills yet. Open POS to start the day.</p>
+          ) : (
+            recent.map((order) => (
+              <Link
+                key={order.id}
+                href={`/orders/${order.id}`}
+                className="block rounded-2xl bg-panel-2 px-4 py-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-gold-2">{order.billNo}</p>
+                  <p className="text-sm">{money(order.total)}</p>
+                </div>
+                <p className="mt-1 text-xs text-muted">
+                  {clock(order.createdAt)} · {typeLabel[order.type]}
+                  {order.tableName ? ` · ${order.tableName}` : ""} · {statusLabel[order.status]}
+                </p>
+              </Link>
+            ))
+          )}
+        </div>
+        <div className="mt-4 hidden overflow-x-auto md:block">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="text-muted">
               <tr>

@@ -28,9 +28,9 @@ export function OrdersBoard({ orders }: { orders: Order[] }) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-gold">Bills</p>
-          <h2 className="font-display mt-1 text-4xl">Order history</h2>
+          <h2 className="font-display mt-1 text-2xl sm:text-4xl">Order history</h2>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           {(["today", "all"] as const).map((value) => (
             <button
               key={value}
@@ -55,8 +55,73 @@ export function OrdersBoard({ orders }: { orders: Order[] }) {
       </div>
       {error ? <p className="text-sm text-rose">{error}</p> : null}
 
-      <section className="rounded-3xl border border-line bg-panel p-5">
-        <div className="overflow-x-auto">
+      <section className="rounded-2xl border border-line bg-panel p-3 sm:rounded-3xl sm:p-5">
+        <div className="space-y-3 md:hidden">
+          {rows.length === 0 ? (
+            <p className="py-6 text-sm text-muted">No bills in this filter.</p>
+          ) : (
+            rows.map((order) => (
+              <article key={order.id} className="rounded-2xl bg-panel-2 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <Link href={`/orders/${order.id}`} className="font-medium text-gold-2">
+                      {order.billNo}
+                    </Link>
+                    <p className="mt-1 text-xs text-muted">
+                      {clock(order.createdAt)} · {order.lines.length} items
+                    </p>
+                    <p className="text-xs text-muted">
+                      {typeLabel[order.type]}
+                      {order.tableName ? ` · ${order.tableName}` : ""} · {statusLabel[order.status]}
+                    </p>
+                  </div>
+                  <p className="shrink-0 font-medium">{money(order.total)}</p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href={`/orders/${order.id}/print`}
+                    className="rounded-xl bg-white px-3 py-2 text-sm text-gold-2"
+                  >
+                    Print
+                  </Link>
+                  {order.status === "open" ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() =>
+                          start(async () => {
+                            const result = await payOrder(order.id, "cash");
+                            if (!result.ok) setError(result.error);
+                            router.refresh();
+                          })
+                        }
+                        className="rounded-xl bg-white px-3 py-2 text-sm disabled:opacity-40"
+                      >
+                        Cash
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() =>
+                          start(async () => {
+                            const result = await voidOrder(order.id);
+                            if (!result.ok) setError(result.error);
+                            router.refresh();
+                          })
+                        }
+                        className="rounded-xl bg-white px-3 py-2 text-sm text-rose disabled:opacity-40"
+                      >
+                        Void
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="text-muted">
               <tr>

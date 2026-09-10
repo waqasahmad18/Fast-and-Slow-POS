@@ -47,9 +47,9 @@ export function SettingsForm({
   }
 
   return (
-    <form onSubmit={submit} className="max-w-xl rounded-3xl border border-line bg-panel p-5">
+    <form onSubmit={submit} className="max-w-xl rounded-2xl border border-line bg-panel p-4 sm:rounded-3xl sm:p-5">
       <p className="text-xs uppercase tracking-[0.2em] text-gold">Restaurant</p>
-      <h2 className="font-display mt-1 text-4xl">Settings</h2>
+      <h2 className="font-display mt-1 text-2xl sm:text-4xl">Settings</h2>
       <p className="mt-1 text-sm text-muted">These details print on every guest bill.</p>
       <div className="mt-5 space-y-3">
         <input
