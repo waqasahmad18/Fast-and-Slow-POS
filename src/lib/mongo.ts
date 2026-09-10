@@ -6,6 +6,12 @@ const globalForMongo = globalThis as unknown as {
   mongoClientPromise?: Promise<MongoClient>;
 };
 
+function missingUriMessage() {
+  return process.env.VERCEL
+    ? "Set MONGODB_URI in Vercel to your MongoDB Atlas mongodb+srv:// connection string, then Redeploy."
+    : "MongoDB is not running. Start it with npm run db:start, then restart the app.";
+}
+
 export function getMongoUri() {
   const fromEnv = process.env.MONGODB_URI?.trim() ?? "";
   if (fromEnv) return fromEnv;
@@ -23,8 +29,8 @@ export function shouldConnectMongo() {
 function connect(uri: string) {
   if (!globalForMongo.mongoClientPromise) {
     const client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 15000,
-      connectTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 20000,
+      connectTimeoutMS: 20000,
     });
     globalForMongo.mongoClientPromise = client.connect();
   }
@@ -36,20 +42,18 @@ export async function tryGetDb(): Promise<Db | null> {
   try {
     const client = await connect(getMongoUri());
     return client.db(dbName);
-  } catch {
+  } catch (error) {
     globalForMongo.mongoClientPromise = undefined;
+    if (process.env.VERCEL) {
+      const detail = error instanceof Error ? error.message : "Unknown MongoDB error.";
+      throw new Error(`MongoDB Atlas connection failed: ${detail}`);
+    }
     return null;
   }
 }
 
 export async function getDb(): Promise<Db> {
   const db = await tryGetDb();
-  if (!db) {
-    throw new Error(
-      process.env.VERCEL
-        ? "Set MONGODB_URI in Vercel to your MongoDB Atlas mongodb+srv:// connection string, then Redeploy."
-        : "MongoDB is not running. Start it with npm run db:start, then restart the app."
-    );
-  }
+  if (!db) throw new Error(missingUriMessage());
   return db;
 }
