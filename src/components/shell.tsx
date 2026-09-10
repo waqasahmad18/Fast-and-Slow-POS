@@ -70,7 +70,7 @@ export function Shell({ children }: { restaurantName: string; children: React.Re
   }, [open]);
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
       <header className="sticky top-0 z-40 flex items-center justify-between gap-3 bg-espresso px-3 py-3 text-cream lg:hidden">
         <BrandMark size="sm" />
         <button
@@ -94,11 +94,11 @@ export function Shell({ children }: { restaurantName: string; children: React.Re
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[min(84vw,300px)] overflow-y-auto bg-espresso text-cream shadow-2xl transition-transform duration-200 lg:relative lg:inset-auto lg:z-auto lg:h-screen lg:w-auto lg:translate-x-0 lg:shadow-none ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(84vw,300px)] flex-col bg-espresso text-cream shadow-2xl transition-transform duration-200 lg:relative lg:inset-auto lg:z-auto lg:min-h-full lg:w-auto lg:translate-x-0 lg:self-stretch lg:shadow-none ${
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="flex h-full flex-col px-4 py-5">
+        <div className="flex h-full min-h-dvh flex-col overflow-y-auto px-4 py-5 lg:sticky lg:top-0 lg:h-dvh lg:min-h-0">
           <div className="mb-6 hidden lg:block">
             <BrandMark />
           </div>
