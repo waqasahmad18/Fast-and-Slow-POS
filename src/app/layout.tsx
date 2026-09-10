@@ -25,6 +25,9 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+export const preferredRegion = "bom1";
+export const maxDuration = 60;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">

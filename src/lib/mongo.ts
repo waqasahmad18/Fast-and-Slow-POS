@@ -1,6 +1,9 @@
+import dns from "node:dns";
 import { MongoClient, type Db } from "mongodb";
 
-const dbName = process.env.MONGODB_DB ?? "fast_and_slow_pos";
+dns.setDefaultResultOrder("ipv4first");
+
+const dbName = process.env.MONGODB_DB?.trim() || "fast_and_slow_pos";
 
 const globalForMongo = globalThis as unknown as {
   mongoClientPromise?: Promise<MongoClient>;
@@ -13,7 +16,7 @@ function missingUriMessage() {
 }
 
 export function getMongoUri() {
-  const fromEnv = process.env.MONGODB_URI?.trim() ?? "";
+  const fromEnv = process.env.MONGODB_URI?.trim().replace(/^['"]|['"]$/g, "") ?? "";
   if (fromEnv) return fromEnv;
   if (process.env.VERCEL) return "";
   return "mongodb://127.0.0.1:27017";
@@ -29,8 +32,9 @@ export function shouldConnectMongo() {
 function connect(uri: string) {
   if (!globalForMongo.mongoClientPromise) {
     const client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 20000,
-      connectTimeoutMS: 20000,
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 8000,
+      family: 4,
     });
     globalForMongo.mongoClientPromise = client.connect();
   }
