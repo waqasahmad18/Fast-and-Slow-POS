@@ -6,9 +6,9 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
       <div className="max-w-lg rounded-[28px] border border-line bg-panel p-6 text-center">
         <h1 className="font-display text-3xl">POS could not load</h1>
         <p className="mt-3 text-sm text-muted">
-          Live data comes from MongoDB Atlas. Check Vercel env vars <code>MONGODB_URI</code> and{" "}
-          <code>MONGODB_DB</code>, Atlas Network Access <code>0.0.0.0/0</code>, and that Cluster0 is
-          resumed.
+          Live data comes from MongoDB Atlas. If this page appears, Cluster0 may be paused or the
+          database user password in <code>MONGODB_URI</code> does not match Atlas. Reset that
+          password in Database Access, update Vercel env vars, then Redeploy.
         </p>
         <button
           type="button"

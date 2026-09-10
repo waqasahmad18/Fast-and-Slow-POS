@@ -54,7 +54,7 @@ function NavLinks({
   );
 }
 
-export function Shell({ children }: { restaurantName: string; children: React.ReactNode }) {
+export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 

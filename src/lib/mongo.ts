@@ -32,9 +32,10 @@ export function shouldConnectMongo() {
 function connect(uri: string) {
   if (!globalForMongo.mongoClientPromise) {
     const client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 8000,
-      family: 4,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 5,
+      minPoolSize: 0,
     });
     globalForMongo.mongoClientPromise = client.connect();
   }
@@ -48,7 +49,9 @@ export async function tryGetDb(): Promise<Db | null> {
     return client.db(dbName);
   } catch (error) {
     globalForMongo.mongoClientPromise = undefined;
-    if (process.env.VERCEL) {
+    const uri = getMongoUri();
+    const isAtlas = uri.startsWith("mongodb+srv://") || uri.includes("mongodb.net");
+    if (process.env.VERCEL || isAtlas) {
       const detail = error instanceof Error ? error.message : "Unknown MongoDB error.";
       throw new Error(`MongoDB Atlas connection failed: ${detail}`);
     }

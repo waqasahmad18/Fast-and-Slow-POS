@@ -25,8 +25,8 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export const preferredRegion = "bom1";
-export const maxDuration = 60;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
