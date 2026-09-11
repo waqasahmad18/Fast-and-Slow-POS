@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Banknote, CreditCard, ReceiptText, Users } from "lucide-react";
+import { AlertTriangle, Banknote, Bike, CreditCard, ReceiptText, ShoppingBag, Users, UtensilsCrossed } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { DashboardDateFilter } from "@/components/dashboard-date-filter";
 import { dishImage } from "@/lib/dishes";
@@ -27,7 +27,14 @@ export function DashboardView({
   openOrders: Order[];
 }) {
   const isToday = dayKey === todayKey;
-  const peak = Math.max(...stats.hourly, 1);
+  const mixTotal = stats.revenue + stats.unpaidTotal + stats.voidTotal;
+  const payTotal = stats.cash + stats.card;
+  const typeMax = Math.max(...stats.byType.map((row) => row.paidAmount), 1);
+  const typeIcons = {
+    "dine-in": UtensilsCrossed,
+    takeaway: ShoppingBag,
+    delivery: Bike,
+  } as const;
   const cards = [
     {
       label: isToday ? "Today sales" : "Paid sales",
@@ -59,9 +66,6 @@ export function DashboardView({
             <BrandMark tone="light" />
           </div>
           <h2 className="font-display text-2xl break-words sm:text-4xl md:mt-4">{restaurantName}</h2>
-          <p className="mt-1 text-sm text-muted sm:text-base">
-            {isToday ? "Today" : dayKey} · {stats.bills} {stats.bills === 1 ? "bill" : "bills"} from MongoDB Atlas
-          </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
           <DashboardDateFilter day={dayKey} today={todayKey} />
@@ -86,35 +90,99 @@ export function DashboardView({
 
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <article className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="font-display text-xl sm:text-2xl">Hourly sales</h3>
-            <div className="flex flex-wrap gap-3 text-xs text-muted sm:text-sm">
-              <span className="inline-flex items-center gap-1">
-                <Banknote size={14} className="text-mint" /> {money(stats.cash)} cash
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <CreditCard size={14} className="text-gold" /> {money(stats.card)} card
-              </span>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-display text-xl sm:text-2xl">Day mix</h3>
+              <p className="mt-1 text-sm text-muted">Paid, open, and cancelled bills for this date</p>
             </div>
           </div>
-          <div className="mt-6 flex h-40 items-end gap-1">
-            {stats.hourly.map((value, hour) => (
-              <div key={hour} className="flex h-full flex-1 flex-col justify-end">
-                <div
-                  className={value > 0 ? "rounded-t bg-gold/80" : ""}
-                  style={{ height: value > 0 ? `${Math.max(8, (value / peak) * 100)}%` : "0%" }}
-                  title={`${hour}:00 · ${money(value)}`}
-                />
+
+          {mixTotal === 0 ? (
+            <p className="mt-6 text-sm text-muted">No bills on this date.</p>
+          ) : (
+            <>
+              <div className="mt-5 flex h-3 overflow-hidden rounded-full bg-panel-2">
+                {stats.revenue > 0 ? (
+                  <div className="bg-mint" style={{ width: `${(stats.revenue / mixTotal) * 100}%` }} />
+                ) : null}
+                {stats.unpaidTotal > 0 ? (
+                  <div className="bg-gold" style={{ width: `${(stats.unpaidTotal / mixTotal) * 100}%` }} />
+                ) : null}
+                {stats.voidTotal > 0 ? (
+                  <div className="bg-rose" style={{ width: `${(stats.voidTotal / mixTotal) * 100}%` }} />
+                ) : null}
               </div>
-            ))}
-          </div>
-          <div className="mt-2 flex justify-between text-[10px] text-muted">
-            <span>12 AM</span>
-            <span>6 AM</span>
-            <span>12 PM</span>
-            <span>6 PM</span>
-            <span>11 PM</span>
-          </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Paid", amount: stats.revenue, count: stats.paidBills, className: "text-mint" },
+                  { label: "Unpaid", amount: stats.unpaidTotal, count: stats.openBills, className: "text-gold-2" },
+                  { label: "Void", amount: stats.voidTotal, count: stats.voidBills, className: "text-rose" },
+                ].map((row) => (
+                  <div key={row.label} className="rounded-2xl bg-panel-2 px-4 py-3">
+                    <p className={`text-xs font-medium ${row.className}`}>{row.label}</p>
+                    <p className="mt-1 font-display text-xl">{money(row.amount)}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {row.count} {row.count === 1 ? "bill" : "bills"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6">
+                <p className="text-sm font-medium">Payments</p>
+                <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-panel-2">
+                  {payTotal === 0 ? null : (
+                    <>
+                      {stats.cash > 0 ? (
+                        <div className="bg-mint" style={{ width: `${(stats.cash / payTotal) * 100}%` }} />
+                      ) : null}
+                      {stats.card > 0 ? (
+                        <div className="bg-gold" style={{ width: `${(stats.card / payTotal) * 100}%` }} />
+                      ) : null}
+                    </>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                  <span className="inline-flex items-center gap-2">
+                    <Banknote size={16} className="text-mint" />
+                    {money(stats.cash)} cash
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <CreditCard size={16} className="text-gold" />
+                    {money(stats.card)} card
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <p className="text-sm font-medium">Order types</p>
+                {stats.byType.map((row) => {
+                  const Icon = typeIcons[row.type];
+                  return (
+                    <div key={row.type}>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="inline-flex min-w-0 items-center gap-2">
+                          <Icon size={16} className="shrink-0 text-gold" />
+                          {typeLabel[row.type]}
+                        </span>
+                        <span className="shrink-0 font-medium">{money(row.paidAmount)}</span>
+                      </div>
+                      <div className="mt-1 h-2 rounded-full bg-panel-2">
+                        <div
+                          className="h-full rounded-full bg-gold/80"
+                          style={{ width: `${(row.paidAmount / typeMax) * 100}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-muted">
+                        {row.paidBills} paid
+                        {row.openBills ? ` · ${row.openBills} open` : ""}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </article>
 
         <article className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">

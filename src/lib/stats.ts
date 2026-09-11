@@ -1,5 +1,5 @@
-import type { Order, StoreData } from "./types";
-import { restaurantDayKey, restaurantHour } from "./time";
+import type { Order, OrderType, StoreData } from "./types";
+import { restaurantDayKey } from "./time";
 
 export function startOfDay(date = new Date()) {
   return new Date(`${restaurantDayKey(date)}T00:00:00+05:00`);
@@ -22,11 +22,12 @@ export type DayStats = {
   itemsSold: number;
   revenue: number;
   unpaidTotal: number;
+  voidTotal: number;
   tax: number;
   avgTicket: number;
   cash: number;
   card: number;
-  hourly: number[];
+  byType: { type: OrderType; paidBills: number; paidAmount: number; openBills: number }[];
   topItems: { name: string; qty: number; sales: number }[];
 };
 
@@ -44,15 +45,20 @@ export function computeDayStats(orders: Order[], date: Date | string = new Date(
   const card = paid
     .filter((order) => order.paymentMethod === "card")
     .reduce((sum, order) => sum + order.total, 0);
+  const voided = allDay.filter((order) => order.status === "void");
+  const voidTotal = voided.reduce((sum, order) => sum + order.total, 0);
   const itemsSold = paid.reduce(
     (sum, order) => sum + order.lines.reduce((n, line) => n + line.qty, 0),
     0
   );
 
-  const hourly = Array.from({ length: 24 }, () => 0);
-  for (const order of paid) {
-    hourly[restaurantHour(order.paidAt ?? order.createdAt)] += order.total;
-  }
+  const orderTypes: OrderType[] = ["dine-in", "takeaway", "delivery"];
+  const byType = orderTypes.map((type) => ({
+    type,
+    paidBills: paid.filter((order) => order.type === type).length,
+    paidAmount: paid.filter((order) => order.type === type).reduce((sum, order) => sum + order.total, 0),
+    openBills: open.filter((order) => order.type === type).length,
+  }));
 
   const itemMap = new Map<string, { name: string; qty: number; sales: number }>();
   for (const order of paid) {
@@ -70,15 +76,16 @@ export function computeDayStats(orders: Order[], date: Date | string = new Date(
     bills: allDay.length,
     openBills: open.length,
     paidBills: paid.length,
-    voidBills: allDay.filter((order) => order.status === "void").length,
+    voidBills: voided.length,
     itemsSold,
     revenue,
     unpaidTotal,
+    voidTotal,
     tax,
     avgTicket: paid.length ? Math.round(revenue / paid.length) : 0,
     cash,
     card,
-    hourly,
+    byType,
     topItems,
   };
 }
