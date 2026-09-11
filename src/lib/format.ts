@@ -12,6 +12,7 @@ export function money(value: number) {
 
 export function clock(iso: string) {
   return new Date(iso).toLocaleString("en-PK", {
+    timeZone: "Asia/Karachi",
     dateStyle: "medium",
     timeStyle: "short",
   });

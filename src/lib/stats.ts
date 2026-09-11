@@ -1,17 +1,12 @@
 import type { Order, StoreData } from "./types";
+import { restaurantDayKey, restaurantHour } from "./time";
 
 export function startOfDay(date = new Date()) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  return new Date(`${restaurantDayKey(date)}T00:00:00+05:00`);
 }
 
 export function isSameDay(iso: string, date = new Date()) {
-  const a = new Date(iso);
-  const b = startOfDay(date);
-  const c = new Date(b);
-  c.setDate(c.getDate() + 1);
-  return a >= b && a < c;
+  return restaurantDayKey(iso) === restaurantDayKey(date);
 }
 
 export function todayOrders(orders: Order[], date = new Date()) {
@@ -51,7 +46,7 @@ export function computeDayStats(orders: Order[], date = new Date()): DayStats {
 
   const hourly = Array.from({ length: 24 }, () => 0);
   for (const order of paid) {
-    hourly[new Date(order.paidAt ?? order.createdAt).getHours()] += order.total;
+    hourly[restaurantHour(order.paidAt ?? order.createdAt)] += order.total;
   }
 
   const itemMap = new Map<string, { name: string; qty: number; sales: number }>();
