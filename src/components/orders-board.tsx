@@ -3,54 +3,90 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarDays } from "lucide-react";
 import { payOrder, voidOrder } from "@/lib/actions";
 import { clock, money, statusLabel, typeLabel } from "@/lib/format";
-import { isSameDay } from "@/lib/stats";
+import { restaurantDayKey } from "@/lib/time";
 import type { Order, OrderStatus } from "@/lib/types";
 
 export function OrdersBoard({ orders }: { orders: Order[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [scope, setScope] = useState<"today" | "all">("today");
+  const todayKey = restaurantDayKey();
+  const [day, setDay] = useState(todayKey);
+  const [allDays, setAllDays] = useState(false);
   const [status, setStatus] = useState<"all" | OrderStatus>("all");
   const [error, setError] = useState("");
 
   const rows = useMemo(() => {
     return orders.filter((order) => {
-      const dayOk = scope === "all" || isSameDay(order.createdAt);
+      const dayOk = allDays || restaurantDayKey(order.createdAt) === day;
       const statusOk = status === "all" || order.status === status;
       return dayOk && statusOk;
     });
-  }, [orders, scope, status]);
+  }, [orders, allDays, day, status]);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-gold">Bills</p>
           <h2 className="font-display mt-1 text-2xl sm:text-4xl">Order history</h2>
+          <p className="mt-1 text-sm text-muted">
+            {allDays ? "All dates" : day === todayKey ? "Today" : day} · {rows.length}{" "}
+            {rows.length === 1 ? "bill" : "bills"}
+          </p>
         </div>
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-          {(["today", "all"] as const).map((value) => (
+        <div className="flex w-full flex-col gap-2 sm:w-auto">
+          <label className="flex h-11 items-center gap-2 rounded-2xl border border-line bg-panel px-3 text-sm text-ink">
+            <CalendarDays size={16} className="shrink-0 text-gold" />
+            <span className="sr-only">Filter by date</span>
+            <input
+              type="date"
+              value={day}
+              max={todayKey}
+              onChange={(event) => {
+                const next = event.target.value;
+                if (!next) return;
+                setDay(next);
+                setAllDays(false);
+              }}
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
             <button
-              key={value}
               type="button"
-              onClick={() => setScope(value)}
-              className={`rounded-full px-4 text-sm capitalize ${scope === value ? "bg-gold text-white" : "bg-panel text-muted"}`}
+              onClick={() => {
+                setDay(todayKey);
+                setAllDays(false);
+              }}
+              className={`h-11 rounded-full px-4 text-sm ${
+                !allDays && day === todayKey ? "bg-gold text-white" : "bg-panel text-muted"
+              }`}
             >
-              {value}
+              Today
             </button>
-          ))}
-          {(["all", "open", "paid", "void"] as const).map((value) => (
             <button
-              key={value}
               type="button"
-              onClick={() => setStatus(value)}
-              className={`rounded-full px-4 text-sm capitalize ${status === value ? "bg-panel-2 text-ink" : "text-muted"}`}
+              onClick={() => setAllDays(true)}
+              className={`h-11 rounded-full px-4 text-sm ${allDays ? "bg-gold text-white" : "bg-panel text-muted"}`}
             >
-              {value}
+              All
             </button>
-          ))}
+            {(["all", "open", "paid", "void"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatus(value)}
+                className={`h-11 rounded-full px-4 text-sm capitalize ${
+                  status === value ? "bg-panel-2 text-ink" : "text-muted"
+                }`}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       {error ? <p className="text-sm text-rose">{error}</p> : null}
