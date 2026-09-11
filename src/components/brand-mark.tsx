@@ -9,8 +9,8 @@ export function BrandMark({
   return (
     <div className="flex items-center gap-3">
       <div
-        className={`grid shrink-0 place-items-center rounded-2xl bg-gold font-display font-semibold text-white shadow-[0_8px_20px_rgba(232,93,4,0.28)] ${
-          size === "sm" ? "h-10 w-10 text-sm" : "h-12 w-12 text-base"
+        className={`grid shrink-0 place-items-center rounded-2xl bg-gold font-display font-semibold text-white ${
+          size === "sm" ? "h-10 w-10 text-sm" : "h-12 w-12 text-base shadow-[0_8px_20px_rgba(232,93,4,0.28)]"
         }`}
       >
         F&S

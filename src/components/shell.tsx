@@ -41,7 +41,7 @@ function NavLinks({
             key={link.href}
             href={link.href}
             onClick={onNavigate}
-            className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition ${
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
               active ? "bg-gold text-white" : "text-cream/70 hover:bg-white/10 hover:text-cream"
             }`}
           >
@@ -98,11 +98,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="flex h-full min-h-dvh flex-col overflow-y-auto px-4 py-5 lg:sticky lg:top-0 lg:h-dvh lg:min-h-0">
-          <div className="mb-6 hidden lg:block">
-            <BrandMark />
+        <div className="flex h-full min-h-dvh flex-col overflow-y-auto px-3 pt-6 pb-4 lg:sticky lg:top-0 lg:h-dvh lg:min-h-0">
+          <div className="mb-4 hidden border-b border-white/10 pb-4 lg:block">
+            <BrandMark size="sm" />
           </div>
-          <div className="mb-6 flex items-center justify-between lg:hidden">
+          <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-4 lg:hidden">
             <BrandMark size="sm" />
             <button
               type="button"
