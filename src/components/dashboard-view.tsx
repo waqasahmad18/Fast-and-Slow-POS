@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AlertTriangle, Banknote, Bike, CreditCard, ReceiptText, ShoppingBag, Users, UtensilsCrossed } from "lucide-react";
-import { BrandMark } from "@/components/brand-mark";
 import { DashboardDateFilter } from "@/components/dashboard-date-filter";
 import { dishImage } from "@/lib/dishes";
 import { clock, money, statusLabel, typeLabel } from "@/lib/format";
@@ -59,24 +58,21 @@ export function DashboardView({
   ];
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="hidden md:block">
-            <BrandMark tone="light" />
-          </div>
-          <h2 className="font-display text-2xl break-words sm:text-4xl md:mt-4">{restaurantName}</h2>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-gold">Overview</p>
+          <h2 className="font-display text-2xl leading-tight sm:text-3xl">{restaurantName}</h2>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-          <DashboardDateFilter day={dayKey} today={todayKey} />
-          <Link
-            href="/pos"
-            className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-gold px-5 text-sm font-semibold text-white sm:w-auto"
-          >
-            New bill
-          </Link>
-        </div>
+        <Link
+          href="/pos"
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-white"
+        >
+          New bill
+        </Link>
       </div>
+
+      <DashboardDateFilter day={dayKey} today={todayKey} />
 
       <section className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         {cards.map((card) => (

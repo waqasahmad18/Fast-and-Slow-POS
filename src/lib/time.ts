@@ -26,3 +26,9 @@ export function clampDayKey(value: string | undefined, today = restaurantDayKey(
   if (!isValidDayKey(value) || value > today) return today;
   return value;
 }
+
+export function shiftRestaurantDay(dayKey: string, days: number) {
+  const date = new Date(`${dayKey}T12:00:00+05:00`);
+  date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+  return restaurantDayKey(date);
+}
