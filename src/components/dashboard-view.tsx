@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, Banknote, CreditCard, ReceiptText, Users } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
+import { DashboardDateFilter } from "@/components/dashboard-date-filter";
 import { dishImage } from "@/lib/dishes";
 import { clock, money, statusLabel, typeLabel } from "@/lib/format";
 import type { DayStats } from "@/lib/stats";
@@ -8,25 +9,46 @@ import type { MenuItem, Order, Table } from "@/lib/types";
 
 export function DashboardView({
   restaurantName,
+  dayKey,
+  todayKey,
   stats,
   lowStock,
   occupied,
-  recent,
+  dayOrders,
   openOrders,
 }: {
   restaurantName: string;
+  dayKey: string;
+  todayKey: string;
   stats: DayStats;
   lowStock: MenuItem[];
   occupied: Table[];
-  recent: Order[];
+  dayOrders: Order[];
   openOrders: Order[];
 }) {
+  const isToday = dayKey === todayKey;
   const peak = Math.max(...stats.hourly, 1);
   const cards = [
-    { label: "Today sales", value: money(stats.revenue), hint: `${stats.paidBills} paid bills` },
-    { label: "Average bill", value: money(stats.avgTicket), hint: `${stats.itemsSold} items sold` },
-    { label: "Tax collected", value: money(stats.tax), hint: "Included in totals" },
-    { label: "Open tables", value: String(occupied.length), hint: `${stats.openBills} unpaid bills` },
+    {
+      label: isToday ? "Today sales" : "Paid sales",
+      value: money(stats.revenue),
+      hint: `${stats.paidBills} paid bills`,
+    },
+    {
+      label: "Unpaid",
+      value: money(stats.unpaidTotal),
+      hint: `${stats.openBills} open bills`,
+    },
+    {
+      label: "Tax collected",
+      value: money(stats.tax),
+      hint: `${stats.itemsSold} items sold`,
+    },
+    {
+      label: "Average bill",
+      value: money(stats.avgTicket),
+      hint: isToday ? `${occupied.length} tables busy` : `${stats.voidBills} void bills`,
+    },
   ];
 
   return (
@@ -37,11 +59,19 @@ export function DashboardView({
             <BrandMark tone="light" />
           </div>
           <h2 className="font-display text-2xl break-words sm:text-4xl md:mt-4">{restaurantName}</h2>
-          <p className="mt-1 text-sm text-muted sm:text-base">Today’s floor, sales, and stock — quick plates, slow cooking.</p>
+          <p className="mt-1 text-sm text-muted sm:text-base">
+            {isToday ? "Today" : dayKey} · {stats.bills} {stats.bills === 1 ? "bill" : "bills"} from MongoDB Atlas
+          </p>
         </div>
-        <Link href="/pos" className="inline-flex w-full items-center justify-center rounded-2xl bg-gold px-5 py-3 text-sm font-semibold text-white sm:w-auto">
-          New bill
-        </Link>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+          <DashboardDateFilter day={dayKey} today={todayKey} />
+          <Link
+            href="/pos"
+            className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-gold px-5 text-sm font-semibold text-white sm:w-auto"
+          >
+            New bill
+          </Link>
+        </div>
       </div>
 
       <section className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
@@ -71,8 +101,8 @@ export function DashboardView({
             {stats.hourly.map((value, hour) => (
               <div key={hour} className="flex h-full flex-1 flex-col justify-end">
                 <div
-                  className="rounded-t bg-gold/80"
-                  style={{ height: `${Math.max(4, (value / peak) * 100)}%` }}
+                  className={value > 0 ? "rounded-t bg-gold/80" : ""}
+                  style={{ height: value > 0 ? `${Math.max(8, (value / peak) * 100)}%` : "0%" }}
                   title={`${hour}:00 · ${money(value)}`}
                 />
               </div>
@@ -91,7 +121,7 @@ export function DashboardView({
           <h3 className="font-display text-xl sm:text-2xl">Top dishes</h3>
           <div className="mt-4 space-y-3">
             {stats.topItems.length === 0 ? (
-              <p className="text-sm text-muted">No paid sales yet today.</p>
+              <p className="text-sm text-muted">No paid sales on this date.</p>
             ) : (
               stats.topItems.map((item, index) => (
                 <div key={item.name} className="flex items-center justify-between gap-3">
@@ -126,12 +156,12 @@ export function DashboardView({
           </div>
           <div className="mt-4 space-y-2">
             {openOrders.length === 0 ? (
-              <p className="text-sm text-muted">No held tables right now.</p>
+              <p className="text-sm text-muted">No open bills on this date.</p>
             ) : (
               openOrders.map((order) => (
                 <Link
                   key={order.id}
-                  href="/pos"
+                  href={`/orders/${order.id}`}
                   className="flex items-center justify-between rounded-2xl bg-panel-2 px-4 py-3"
                 >
                   <div>
@@ -182,14 +212,14 @@ export function DashboardView({
 
       <article className="rounded-2xl border border-line bg-panel p-3 sm:rounded-[28px] sm:p-5">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-xl sm:text-2xl">Recent bills</h3>
+          <h3 className="font-display text-xl sm:text-2xl">Bills this day</h3>
           <ReceiptText size={18} className="text-gold" />
         </div>
         <div className="mt-4 space-y-2 md:hidden">
-          {recent.length === 0 ? (
-            <p className="py-4 text-sm text-muted">No bills yet. Open POS to start the day.</p>
+          {dayOrders.length === 0 ? (
+            <p className="py-4 text-sm text-muted">No bills on this date.</p>
           ) : (
-            recent.map((order) => (
+            dayOrders.map((order) => (
               <Link
                 key={order.id}
                 href={`/orders/${order.id}`}
@@ -219,14 +249,14 @@ export function DashboardView({
               </tr>
             </thead>
             <tbody>
-              {recent.length === 0 ? (
+              {dayOrders.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-6 text-muted">
-                    No bills yet. Open POS to start the day.
+                    No bills on this date.
                   </td>
                 </tr>
               ) : (
-                recent.map((order) => (
+                dayOrders.map((order) => (
                   <tr key={order.id} className="border-t border-line">
                     <td className="py-3">
                       <Link href={`/orders/${order.id}`} className="text-gold-2 hover:underline">

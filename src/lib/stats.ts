@@ -9,16 +9,19 @@ export function isSameDay(iso: string, date = new Date()) {
   return restaurantDayKey(iso) === restaurantDayKey(date);
 }
 
-export function todayOrders(orders: Order[], date = new Date()) {
-  return orders.filter((order) => order.status !== "void" && isSameDay(order.createdAt, date));
+export function todayOrders(orders: Order[], date: Date | string = new Date()) {
+  const dayKey = typeof date === "string" ? date : restaurantDayKey(date);
+  return orders.filter((order) => order.status !== "void" && restaurantDayKey(order.createdAt) === dayKey);
 }
 
 export type DayStats = {
   bills: number;
   openBills: number;
   paidBills: number;
+  voidBills: number;
   itemsSold: number;
   revenue: number;
+  unpaidTotal: number;
   tax: number;
   avgTicket: number;
   cash: number;
@@ -27,11 +30,13 @@ export type DayStats = {
   topItems: { name: string; qty: number; sales: number }[];
 };
 
-export function computeDayStats(orders: Order[], date = new Date()): DayStats {
-  const day = todayOrders(orders, date);
-  const paid = day.filter((order) => order.status === "paid");
-  const open = day.filter((order) => order.status === "open");
+export function computeDayStats(orders: Order[], date: Date | string = new Date()): DayStats {
+  const dayKey = typeof date === "string" ? date : restaurantDayKey(date);
+  const allDay = orders.filter((order) => restaurantDayKey(order.createdAt) === dayKey);
+  const paid = allDay.filter((order) => order.status === "paid");
+  const open = allDay.filter((order) => order.status === "open");
   const revenue = paid.reduce((sum, order) => sum + order.total, 0);
+  const unpaidTotal = open.reduce((sum, order) => sum + order.total, 0);
   const tax = paid.reduce((sum, order) => sum + order.tax, 0);
   const cash = paid
     .filter((order) => order.paymentMethod === "cash")
@@ -39,7 +44,7 @@ export function computeDayStats(orders: Order[], date = new Date()): DayStats {
   const card = paid
     .filter((order) => order.paymentMethod === "card")
     .reduce((sum, order) => sum + order.total, 0);
-  const itemsSold = day.reduce(
+  const itemsSold = paid.reduce(
     (sum, order) => sum + order.lines.reduce((n, line) => n + line.qty, 0),
     0
   );
@@ -62,11 +67,13 @@ export function computeDayStats(orders: Order[], date = new Date()): DayStats {
   const topItems = [...itemMap.values()].sort((a, b) => b.sales - a.sales).slice(0, 6);
 
   return {
-    bills: day.length,
+    bills: allDay.length,
     openBills: open.length,
     paidBills: paid.length,
+    voidBills: allDay.filter((order) => order.status === "void").length,
     itemsSold,
     revenue,
+    unpaidTotal,
     tax,
     avgTicket: paid.length ? Math.round(revenue / paid.length) : 0,
     cash,

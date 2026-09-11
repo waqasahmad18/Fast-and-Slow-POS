@@ -1,5 +1,6 @@
 import { getStore } from "./store";
 import { computeDayStats, lowStockItems } from "./stats";
+import { restaurantDayKey } from "./time";
 
 export async function loadPosData() {
   const data = await getStore();
@@ -12,15 +13,19 @@ export async function loadPosData() {
   };
 }
 
-export async function loadDashboard() {
+export async function loadDashboard(dayKey?: string) {
   const data = await getStore();
+  const day = dayKey ?? restaurantDayKey();
+  const dayOrders = data.orders.filter((order) => restaurantDayKey(order.createdAt) === day);
   return {
     restaurantName: data.restaurantName,
-    stats: computeDayStats(data.orders),
+    dayKey: day,
+    todayKey: restaurantDayKey(),
+    stats: computeDayStats(data.orders, day),
     lowStock: lowStockItems(data),
     occupied: data.tables.filter((table) => table.status === "occupied"),
-    recent: data.orders.slice(0, 8),
-    openOrders: data.orders.filter((order) => order.status === "open"),
+    dayOrders,
+    openOrders: dayOrders.filter((order) => order.status === "open"),
   };
 }
 
